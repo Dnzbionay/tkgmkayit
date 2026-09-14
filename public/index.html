@@ -214,8 +214,8 @@
                 </div>
                 <div style="background:#fff;border-radius:8px;padding:15px;margin-bottom:12px;" id="mailOnizleme"></div>
                 <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap;">
-                    <button class="btn btn-primary" onclick="mailKopyala()">Tabloyu Kopyala</button>
-                    <button class="btn btn-success btn-sm" onclick="mailAc()">Mail Uygulamasini Ac</button>
+                    <button class="btn btn-success" onclick="mailAc()">Mail Gonder (.eml)</button>
+                    <button class="btn btn-secondary btn-sm" onclick="document.getElementById('mailModal').classList.add('hidden')">Kapat</button>
                 </div>
             </div>
         </div>
@@ -480,27 +480,30 @@
         }
 
         function mailKopyala() {
-            if (navigator.clipboard.write) {
-                const htmlBlob = new Blob([sonMailHTML], { type: 'text/html' });
-                const tmp = document.createElement('div');
-                tmp.innerHTML = sonMailHTML;
-                const textBlob = new Blob([tmp.innerText], { type: 'text/plain' });
-                const item = new ClipboardItem({ 'text/html': htmlBlob, 'text/plain': textBlob });
-                navigator.clipboard.write([item]).then(() => { alert('Tablo kopyalandi! Yeni mail acip yapistirin.'); });
-            } else {
-                const range = document.createRange();
-                range.selectNodeContents(document.getElementById('mailOnizleme'));
-                const sel = window.getSelection();
-                sel.removeAllRanges();
-                sel.addRange(range);
-                document.execCommand('copy');
-                sel.removeAllRanges();
-                alert('Kopyalandi!');
-            }
+            const emlIcerik = 'MIME-Version: 1.0\r\nContent-Type: text/html; charset=UTF-8\r\nSubject: ' + sonMailKonu + '\r\n\r\n' + sonMailHTML;
+            const blob = new Blob([emlIcerik], { type: 'message/rfc822' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'TKGM_Ariza_Kayit.eml';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            alert('.eml dosyasi indirildi. Acmak icin tiklayin, mail uygulamaniz acilacaktir.');
         }
 
         function mailAc() {
-            window.location.href = 'mailto:?subject=' + encodeURIComponent(sonMailKonu);
+            const emlIcerik = 'MIME-Version: 1.0\r\nContent-Type: text/html; charset=UTF-8\r\nSubject: ' + sonMailKonu + '\r\n\r\n' + sonMailHTML;
+            const blob = new Blob([emlIcerik], { type: 'message/rfc822' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'TKGM_Ariza_Kayit.eml';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
         }
     </script>
 </body>
