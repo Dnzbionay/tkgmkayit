@@ -214,8 +214,7 @@
                 </div>
                 <div style="background:#fff;border-radius:8px;padding:15px;margin-bottom:12px;" id="mailOnizleme"></div>
                 <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap;">
-                    <button class="btn btn-primary" onclick="mailKopyala()">Tabloyu Kopyala (HTML)</button>
-                    <button class="btn btn-secondary btn-sm" onclick="mailKonuKopyala()">Konuyu Kopyala</button>
+                    <button class="btn btn-primary" onclick="mailKopyala()">Tabloyu Kopyala</button>
                     <button class="btn btn-success btn-sm" onclick="mailAc()">Mail Uygulamasini Ac</button>
                 </div>
             </div>
@@ -465,15 +464,14 @@
                 });
                 const outData = await outRes.json();
                 if (outData.hata) { durum.style.display = 'none'; alert(outData.hata); return; }
-                durum.style.display = 'none';
 
                 if (outData.bulut) {
                     sonMailHTML = outData.html;
                     sonMailKonu = outData.konu;
                     document.getElementById('mailOnizleme').innerHTML = '<p style="margin-bottom:10px;"><strong>Konu:</strong> ' + outData.konu + '</p>' + outData.html;
                     document.getElementById('mailModal').classList.remove('hidden');
+                    durum.style.display = 'none';
                 } else {
-                    durum.style.display = 'block';
                     durum.style.color = '#00e676';
                     durum.textContent = 'Outlook acildi! ' + mailData.kayitSayisi + ' kayit ile tablo hazir.';
                     setTimeout(() => { durum.style.display = 'none'; }, 5000);
@@ -484,9 +482,11 @@
         function mailKopyala() {
             if (navigator.clipboard.write) {
                 const htmlBlob = new Blob([sonMailHTML], { type: 'text/html' });
-                const textBlob = new Blob([document.getElementById('mailOnizleme').innerText], { type: 'text/plain' });
+                const tmp = document.createElement('div');
+                tmp.innerHTML = sonMailHTML;
+                const textBlob = new Blob([tmp.innerText], { type: 'text/plain' });
                 const item = new ClipboardItem({ 'text/html': htmlBlob, 'text/plain': textBlob });
-                navigator.clipboard.write([item]).then(() => { alert('HTML olarak kopyalandi! Outlook\'a yapistirin.'); });
+                navigator.clipboard.write([item]).then(() => { alert('Tablo kopyalandi! Yeni mail acip yapistirin.'); });
             } else {
                 const range = document.createRange();
                 range.selectNodeContents(document.getElementById('mailOnizleme'));
@@ -495,12 +495,8 @@
                 sel.addRange(range);
                 document.execCommand('copy');
                 sel.removeAllRanges();
-                alert('Kopyalandi! Outlook\'a yapistirin.');
+                alert('Kopyalandi!');
             }
-        }
-
-        function mailKonuKopyala() {
-            navigator.clipboard.writeText(sonMailKonu).then(() => { alert('Konu kopyalandi: ' + sonMailKonu); });
         }
 
         function mailAc() {
