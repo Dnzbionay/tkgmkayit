@@ -297,14 +297,6 @@ function buildMailHTML(tabloSatirlari) {
     return tablo;
 }
 
-function buildMailPlainText(tabloSatirlari) {
-    let txt = 'Merhaba,\n\nAsagida bilgileri yer alan tapu mudurlukleri icin kayit acilmasi konusunda yardimlariniz rica olunur.\n\nTesekkurler,\n\n';
-    for (const s of tabloSatirlari) {
-        txt += s.konu + ' | ' + s.isYeriNo + ' | ' + s.isYeriAdi + ' | ' + s.adres + ' | ' + s.ilce + '/' + s.il + ' | TEL:' + s.tel1 + ' | ' + s.terminalNo + ' | ' + s.kecSn + ' | ' + s.aciklama + '\n';
-    }
-    return txt;
-}
-
 app.post('/api/ariza-mail', sifreKontrol, (req, res) => {
     const { kayitlar } = req.body;
     if (!kayitlar || !Array.isArray(kayitlar) || kayitlar.length === 0) {
@@ -337,7 +329,7 @@ app.post('/api/ariza-mail', sifreKontrol, (req, res) => {
 
     const htmlTablo = buildMailHTML(tabloSatirlari);
     const mailHTML = 'Merhaba,<br><br>Asagida bilgileri yer alan tapu mudurlukleri icin kayit acilmasi konusunda yardimlariniz rica olunur.<br><br>Tesekkurler,<br><br>' + htmlTablo;
-    const plainText = buildMailPlainText(tabloSatirlari);
+    const plainText = 'Merhaba,\n\nAsagida bilgileri yer alan tapu mudurlukleri icin kayit acilmasi konusunda yardimlariniz rica olunur.\n\nTesekkurler,\n\n' + tabloSatirlari.map(s => s.isYeriAdi + ' | ' + s.kecSn + ' | ' + s.terminalNo + ' | ' + s.ilce + ' | ' + s.tel1).join('\n');
 
     res.json({ konu: 'TKGM ARIZA KAYIT', html: mailHTML, plainText: plainText, kayitSayisi: tabloSatirlari.length, hatalar: hatalar.length > 0 ? hatalar : null });
 });
