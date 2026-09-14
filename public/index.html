@@ -432,7 +432,7 @@
             const durum = document.getElementById('mailDurum');
             durum.style.display = 'block';
             durum.style.color = '#ffc107';
-            durum.textContent = 'Mail hazirlaniyor...';
+            durum.textContent = 'Mail gonderiliyor...';
             apiFetch('/api/ariza-mail', {
                 method: 'POST',
                 body: JSON.stringify({ kayitlar: eklenenKayitlar })
@@ -444,27 +444,10 @@
                 }).then(r => r.json()).then(outData => {
                     durum.style.display = 'none';
                     if (outData.hata) { alert(outData.hata); return; }
-                    if (outData.bulut) {
-                        const eml = 'MIME-Version: 1.0\r\nContent-Type: text/html; charset=UTF-8\r\nContent-Transfer-Encoding: base64\r\nSubject: ' + outData.konu + '\r\n\r\n' + btoa(unescape(encodeURIComponent(outData.html)));
-                        const blob = new Blob([eml], { type: 'message/rfc822' });
-                        const url = URL.createObjectURL(blob);
-                        const a = document.createElement('a');
-                        a.href = url;
-                        a.download = 'TKGM_Ariza_Kayit.eml';
-                        document.body.appendChild(a);
-                        a.click();
-                        document.body.removeChild(a);
-                        URL.revokeObjectURL(url);
-                        durum.style.display = 'block';
-                        durum.style.color = '#00e676';
-                        durum.textContent = '.eml indirildi. Acmak icin tiklayin, Outlook tablo ile acilacaktir.';
-                        setTimeout(() => { durum.style.display = 'none'; }, 8000);
-                    } else {
-                        durum.style.display = 'block';
-                        durum.style.color = '#00e676';
-                        durum.textContent = 'Outlook acildi!';
-                        setTimeout(() => { durum.style.display = 'none'; }, 3000);
-                    }
+                    durum.style.display = 'block';
+                    durum.style.color = '#00e676';
+                    durum.textContent = outData.mesaj || 'Outlook acildi!';
+                    setTimeout(() => { durum.style.display = 'none'; }, 5000);
                 });
             }).catch(err => { durum.style.display = 'none'; alert('Hata: ' + err.message); });
         }
