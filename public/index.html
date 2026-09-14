@@ -213,9 +213,10 @@
                     <button class="btn btn-secondary btn-sm" onclick="document.getElementById('mailModal').classList.add('hidden')">Kapat</button>
                 </div>
                 <div style="background:#fff;border-radius:8px;padding:15px;margin-bottom:12px;" id="mailOnizleme"></div>
-                <div style="display:flex;gap:10px;justify-content:center;">
-                    <button class="btn btn-primary" onclick="mailKopyala()">Kopyala</button>
-                    <button class="btn btn-success" onclick="mailPaylas()">Paylas / Mail Gonder</button>
+                <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap;">
+                    <button class="btn btn-primary" onclick="mailKopyala()">Tabloyu Kopyala (HTML)</button>
+                    <button class="btn btn-secondary btn-sm" onclick="mailKonuKopyala()">Konuyu Kopyala</button>
+                    <button class="btn btn-success btn-sm" onclick="mailAc()">Mail Uygulamasini Ac</button>
                 </div>
             </div>
         </div>
@@ -481,21 +482,29 @@
         }
 
         function mailKopyala() {
-            const tmp = document.createElement('div');
-            tmp.innerHTML = sonMailHTML;
-            const text = tmp.innerText;
-            navigator.clipboard.writeText(text).then(() => { alert('Kopyalandi! Mail uygulamasinda yapistirin.'); });
+            if (navigator.clipboard.write) {
+                const htmlBlob = new Blob([sonMailHTML], { type: 'text/html' });
+                const textBlob = new Blob([document.getElementById('mailOnizleme').innerText], { type: 'text/plain' });
+                const item = new ClipboardItem({ 'text/html': htmlBlob, 'text/plain': textBlob });
+                navigator.clipboard.write([item]).then(() => { alert('HTML olarak kopyalandi! Outlook\'a yapistirin.'); });
+            } else {
+                const range = document.createRange();
+                range.selectNodeContents(document.getElementById('mailOnizleme'));
+                const sel = window.getSelection();
+                sel.removeAllRanges();
+                sel.addRange(range);
+                document.execCommand('copy');
+                sel.removeAllRanges();
+                alert('Kopyalandi! Outlook\'a yapistirin.');
+            }
         }
 
-        async function mailPaylas() {
-            const tmp = document.createElement('div');
-            tmp.innerHTML = sonMailHTML;
-            const text = tmp.innerText;
-            if (navigator.share) {
-                await navigator.share({ title: sonMailKonu, text: text });
-            } else {
-                window.location.href = 'mailto:?subject=' + encodeURIComponent(sonMailKonu) + '&body=' + encodeURIComponent(text);
-            }
+        function mailKonuKopyala() {
+            navigator.clipboard.writeText(sonMailKonu).then(() => { alert('Konu kopyalandi: ' + sonMailKonu); });
+        }
+
+        function mailAc() {
+            window.location.href = 'mailto:?subject=' + encodeURIComponent(sonMailKonu);
         }
     </script>
 </body>
