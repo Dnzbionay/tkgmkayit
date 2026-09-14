@@ -297,6 +297,25 @@ function buildMailHTML(tabloSatirlari) {
     return tablo;
 }
 
+function buildMailPlainText(tabloSatirlari) {
+    let txt = 'Merhaba,\n\nAsagida bilgileri yer alan tapu mudurlukleri icin kayit acilmasi konusunda yardimlariniz rica olunur.\n\nTesekkurler,\n\n';
+    for (const s of tabloSatirlari) {
+        txt += '---\n';
+        txt += 'Konu: ' + s.konu + '\n';
+        txt += 'Is Yeri No: ' + s.isYeriNo + '\n';
+        txt += 'Is Yeri Adi: ' + s.isYeriAdi + '\n';
+        txt += 'Adres: ' + s.adres + '\n';
+        txt += 'Ilce: ' + s.ilce + '\n';
+        txt += 'Il: ' + s.il + '\n';
+        txt += 'Tel: ' + s.tel1 + '\n';
+        txt += 'Terminal No: ' + s.terminalNo + '\n';
+        txt += 'KEC SN: ' + s.kecSn + '\n';
+        txt += 'Aciklama: ' + s.aciklama + '\n\n';
+    }
+    txt += '---\n\nIyi calismalar.\n\nDeniz Karacor\nTeknik Destek\nEGA Elektronik Guvenlik Altyapisi A.S.\ndeniz.karacor@ega.com.tr';
+    return txt;
+}
+
 app.post('/api/ariza-mail', sifreKontrol, (req, res) => {
     const { kayitlar } = req.body;
     if (!kayitlar || !Array.isArray(kayitlar) || kayitlar.length === 0) {
@@ -328,9 +347,10 @@ app.post('/api/ariza-mail', sifreKontrol, (req, res) => {
     }
 
     const htmlTablo = buildMailHTML(tabloSatirlari);
-    const mailHTML = 'Merhaba,<br><br>Asagida bilgileri yer alan tapu mudurlukleri icin kayit acilmasi konusunda yardimlariniz rica olunur.<br><br>Tesekkurler,<br><br>' + htmlTablo + '<br><br>Iyi calismalar.<br><br>Deniz Karacor<br>Teknik Destek<br>Technical Support<br><br><br>EGA Elektronik Guvenlik Altyapisi A.S.<br>Teknopark Istanbul Sanayi Mahallesi, Teknopark Bulvari No:1-11C Blok Kat:3 No:309 34906 Pendik Istanbul<br><br><br>T : 0 (216) 759 00 60 / 117<br>M: 0 (537) 959 36 71<br>deniz.karacor@ega.com.tr<br>www.ega.com.tr        www.bionay.com.tr';
+    const mailHTML = 'Merhaba,<br><br>Asagida bilgileri yer alan tapu mudurlukleri icin kayit acilmasi konusunda yardimlariniz rica olunur.<br><br>Tesekkurler,<br><br>' + htmlTablo + '<br><br>Iyi calismalar.<br><br>Deniz Karacor<br>Teknik Destek<br>Technical Support<br><br><br>EGA Elektronik Guvenlik Altyapisi A.S.<br>Teknopark Istanbul Sanayi Mahallesi, Teknopark Bulvari No:1-11C Blok Kat:3 No:309 34906 Pendik Istanbul<br><br><br>T : 0 (216) 759 00 60 / 117<br>M : 0 (537) 959 36 71<br>deniz.karacor@ega.com.tr<br>www.ega.com.tr        www.bionay.com.tr';
+    const plainText = buildMailPlainText(tabloSatirlari);
 
-    res.json({ konu: 'TKGM ARIZA KAYIT', html: mailHTML, kayitSayisi: tabloSatirlari.length, hatalar: hatalar.length > 0 ? hatalar : null });
+    res.json({ konu: 'TKGM ARIZA KAYIT', html: mailHTML, plainText: plainText, kayitSayisi: tabloSatirlari.length, hatalar: hatalar.length > 0 ? hatalar : null });
 });
 
 app.post('/api/outlook-ac', sifreKontrol, (req, res) => {
