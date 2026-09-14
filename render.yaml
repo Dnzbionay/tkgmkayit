@@ -1,0 +1,9 @@
+services:
+  - type: web
+    name: tkgmkayit
+    runtime: node
+    plan: free
+    buildCommand: npm install
+    startCommand: node server.js
+    envVars:
+      - nodeVersion: 22

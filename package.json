@@ -1,0 +1,21 @@
+{
+  "name": "tkgmkayit",
+  "version": "1.0.0",
+  "description": "TKGM Ariza Kayit Sistemi",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "dependencies": {
+    "@kenjiuno/msgreader": "^1.28.0",
+    "express": "^5.2.1",
+    "xlsx": "^0.18.5"
+  }
+}
