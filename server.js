@@ -337,11 +337,9 @@ app.post('/api/outlook-ac', sifreKontrol, (req, res) => {
     const { html, konu } = req.body;
     if (!html) return res.status(400).json({ hata: 'HTML gerekli' });
 
-    // Mobilde mailto ile ac
-    const isMobile = /android|iphone|ipad/i.test(req.headers['user-agent'] || '');
-    if (isMobile) {
-        const mailtoUrl = 'mailto:?subject=' + encodeURIComponent(konu || 'TKGM ARIZA KAYIT') + '&body=' + encodeURIComponent(html.replace(/<[^>]*>/g, '').replace(/&nbsp;/g, ' '));
-        return res.json({ durum: 'ok', mailto: mailtoUrl, mobil: true });
+    // Windows disinda (Render/bulut) - HTML'i dondur, kullansin
+    if (process.platform !== 'win32') {
+        return res.json({ durum: 'ok', html: html, konu: konu, bulut: true });
     }
 
     const tempDir = path.join(__dirname, 'temp');
