@@ -445,7 +445,20 @@
                     durum.style.display = 'none';
                     if (outData.hata) { alert(outData.hata); return; }
                     if (outData.bulut) {
-                        window.location.href = 'mailto:?subject=' + encodeURIComponent(outData.konu) + '&body=' + encodeURIComponent(outData.plainText || mailData.plainText);
+                        const eml = 'MIME-Version: 1.0\r\nContent-Type: text/html; charset=UTF-8\r\nContent-Transfer-Encoding: base64\r\nSubject: ' + outData.konu + '\r\n\r\n' + btoa(unescape(encodeURIComponent(outData.html)));
+                        const blob = new Blob([eml], { type: 'message/rfc822' });
+                        const url = URL.createObjectURL(blob);
+                        const a = document.createElement('a');
+                        a.href = url;
+                        a.download = 'TKGM_Ariza_Kayit.eml';
+                        document.body.appendChild(a);
+                        a.click();
+                        document.body.removeChild(a);
+                        URL.revokeObjectURL(url);
+                        durum.style.display = 'block';
+                        durum.style.color = '#00e676';
+                        durum.textContent = '.eml indirildi. Tiklayarak Outlookta acin, tablo eksiksiz gelecek.';
+                        setTimeout(() => { durum.style.display = 'none'; }, 5000);
                     } else {
                         durum.style.display = 'block';
                         durum.style.color = '#00e676';
