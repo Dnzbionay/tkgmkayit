@@ -6,8 +6,16 @@ const { execSync } = require('child_process');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
+const SIFRE = process.env.SIFRE || 'ega2024';
 
 app.use(express.json({ limit: '50mb' }));
+
+function sifreKontrol(req, res, next) {
+    const sifre = req.headers['x-sifre'] || req.query.sifre;
+    if (sifre !== SIFRE) return res.status(401).json({ hata: 'Gecersiz sifre' });
+    next();
+}
+
 app.use(express.static('public'));
 
 // ============================================================
@@ -183,12 +191,12 @@ function loadData() {
 // API'LER
 // ============================================================
 
-app.get('/api/tapular', (req, res) => {
+app.get('/api/tapular', sifreKontrol, (req, res) => {
     const { cihazlar } = loadData();
     res.json([...new Set(cihazlar.map(c => c.isYeriAdi))].sort());
 });
 
-app.get('/api/tapu-bilgi/:tapuAdi', (req, res) => {
+app.get('/api/tapu-bilgi/:tapuAdi', sifreKontrol, (req, res) => {
     const { cihazlar, anahtarlar } = loadData();
     const tapuAdi = decodeURIComponent(req.params.tapuAdi);
     const tapuCihazlari = cihazlar.filter(c => c.isYeriAdi === tapuAdi);
@@ -198,7 +206,7 @@ app.get('/api/tapu-bilgi/:tapuAdi', (req, res) => {
 });
 
 // YENI: Excel yukle ve basliklari analiz et
-app.post('/api/excel-yukle', (req, res) => {
+app.post('/api/excel-yukle', sifreKontrol, (req, res) => {
     const { dosyaIcerigi, dosyaAdi } = req.body;
     if (!dosyaIcerigi) return res.status(400).json({ hata: 'Dosya icerigi gerekli' });
 
@@ -249,7 +257,7 @@ app.post('/api/excel-yukle', (req, res) => {
 });
 
 // Excel'i kaydet - dosyayi orijinal adiyla dizine kaydeder
-app.post('/api/excel-kaydet', (req, res) => {
+app.post('/api/excel-kaydet', sifreKontrol, (req, res) => {
     const { dosyaIcerigi, dosyaAdi } = req.body;
     if (!dosyaIcerigi || !dosyaAdi) return res.status(400).json({ hata: 'Eksik bilgi' });
 
@@ -289,7 +297,7 @@ function buildMailHTML(tabloSatirlari) {
     return tablo;
 }
 
-app.post('/api/ariza-mail', (req, res) => {
+app.post('/api/ariza-mail', sifreKontrol, (req, res) => {
     const { kayitlar } = req.body;
     if (!kayitlar || !Array.isArray(kayitlar) || kayitlar.length === 0) {
         return res.status(400).json({ hata: 'En az bir kayit gerekli' });
@@ -325,9 +333,16 @@ app.post('/api/ariza-mail', (req, res) => {
     res.json({ konu: 'TKGM ARIZA KAYIT', html: mailHTML, kayitSayisi: tabloSatirlari.length, hatalar: hatalar.length > 0 ? hatalar : null });
 });
 
-app.post('/api/outlook-ac', (req, res) => {
+app.post('/api/outlook-ac', sifreKontrol, (req, res) => {
     const { html, konu } = req.body;
     if (!html) return res.status(400).json({ hata: 'HTML gerekli' });
+
+    // Mobilde mailto ile ac
+    const isMobile = /android|iphone|ipad/i.test(req.headers['user-agent'] || '');
+    if (isMobile) {
+        const mailtoUrl = 'mailto:?subject=' + encodeURIComponent(konu || 'TKGM ARIZA KAYIT') + '&body=' + encodeURIComponent(html.replace(/<[^>]*>/g, '').replace(/&nbsp;/g, ' '));
+        return res.json({ durum: 'ok', mailto: mailtoUrl, mobil: true });
+    }
 
     const tempDir = path.join(__dirname, 'temp');
     if (!fs.existsSync(tempDir)) fs.mkdirSync(tempDir, { recursive: true });

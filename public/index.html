@@ -120,7 +120,19 @@
     </style>
 </head>
 <body>
-    <div class="container">
+    <!-- GIRIS EKRANI -->
+    <div id="loginEkran" style="display:flex;justify-content:center;align-items:center;min-height:100vh;">
+        <div class="card" style="width:340px;text-align:center;">
+            <h1 style="font-size:20px;margin-bottom:5px;">TKGM Ariza Kayit</h1>
+            <p style="color:#888;font-size:12px;margin-bottom:20px;">Sisteme girmek icin sifrenizi girin</p>
+            <input type="password" id="sifreInput" placeholder="Sifre" style="width:100%;padding:12px;border:1px solid rgba(255,255,255,0.15);border-radius:8px;background:rgba(0,0,0,0.3);color:#fff;font-size:16px;margin-bottom:15px;text-align:center;" onkeydown="if(event.key==='Enter')girisYap()">
+            <button class="btn btn-primary" style="width:100%;" onclick="girisYap()">GIRIS YAP</button>
+            <div id="loginHata" style="color:#ff5252;font-size:12px;margin-top:10px;"></div>
+        </div>
+    </div>
+
+    <!-- ANA EKRAN (sifre dogruysa gorunur) -->
+    <div class="container" id="anaEkran" style="display:none;">
         <h1>TKGM Ariza Kayit Sistemi</h1>
         <p class="subtitle">Tapu Kadastro Genel Mudurlugu - KEC Ariza Kayit Otomasyonu</p>
 
@@ -200,6 +212,27 @@
         let seciliCihaz = null;
         let seciliAnahtar = null;
         let eklenenKayitlar = [];
+        let kullaniciSifresi = '';
+
+        function girisYap() {
+            kullaniciSifresi = document.getElementById('sifreInput').value;
+            if (!kullaniciSifresi) return;
+            fetch('/api/tapular', { headers: { 'x-sifre': kullaniciSifresi } })
+                .then(r => { if (!r.ok) throw new Error(); return r.json(); })
+                .then(() => {
+                    document.getElementById('loginEkran').style.display = 'none';
+                    document.getElementById('anaEkran').style.display = 'block';
+                    window.onload();
+                })
+                .catch(() => { document.getElementById('loginHata').textContent = 'Yanlis sifre!'; });
+        }
+
+        function apiFetch(url, opts = {}) {
+            opts.headers = opts.headers || {};
+            opts.headers['x-sifre'] = kullaniciSifresi;
+            opts.headers['Content-Type'] = 'application/json';
+            return fetch(url, opts);
+        }
 
         // ============================================================
         // VERI YUKLEME
@@ -227,9 +260,8 @@
             reader.onload = async function(e) {
                 const base64 = e.target.result.split(',')[1];
                 try {
-                    const analizRes = await fetch('/api/excel-yukle', {
+                    const analizRes = await apiFetch('/api/excel-yukle', {
                         method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ dosyaIcerigi: base64, dosyaAdi: dosya.name })
                     });
                     const analiz = await analizRes.json();
@@ -268,9 +300,8 @@
             durumDiv.innerHTML = '<div class="durum-kutu" style="color:#ffc107">Kaydediliyor...</div>';
 
             try {
-                const res = await fetch('/api/excel-kaydet', {
+                const res = await apiFetch('/api/excel-kaydet', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ dosyaIcerigi: base64, dosyaAdi: dosyaAdi })
                 });
                 const data = await res.json();
@@ -291,7 +322,7 @@
         // ARIZA KAYIT
         // ============================================================
         async function tapulariYukle() {
-            const tapuRes = await fetch('/api/tapular');
+            const tapuRes = await apiFetch('/api/tapular');
             tapuListesi = await tapuRes.json();
             const dl = document.getElementById('tapuList');
             dl.innerHTML = '';
@@ -300,10 +331,11 @@
 
         window.onload = async function() {
             await tapulariYukle();
-            let toplam = 0;
-            for (const t of tapuListesi) { const r = await fetch('/api/tapu-bilgi/' + encodeURIComponent(t)); const d = await r.json(); toplam += d.cihazlar.length; }
-            document.getElementById('statCihaz').textContent = toplam;
             document.getElementById('statTapu').textContent = tapuListesi.length;
+            document.getElementById('statCihaz').textContent = tapuListesi.length > 0 ? '...' : '0';
+            let toplam = 0;
+            for (const t of tapuListesi) { const r = await apiFetch('/api/tapu-bilgi/' + encodeURIComponent(t)); const d = await r.json(); toplam += d.cihazlar.length; }
+            document.getElementById('statCihaz').textContent = toplam;
         };
 
         document.getElementById('tapuSelect').addEventListener('change', async function() {
@@ -314,7 +346,7 @@
                 document.getElementById('cihazBilgi').classList.add('hidden');
                 return;
             }
-            const res = await fetch('/api/tapu-bilgi/' + encodeURIComponent(tapuAdi));
+            const res = await apiFetch('/api/tapu-bilgi/' + encodeURIComponent(tapuAdi));
             const data = await res.json();
             tapuCihazlari = data.cihazlar;
             seciliAnahtar = data.anahtar;
@@ -400,22 +432,28 @@
             const durum = document.getElementById('mailDurum');
             durum.style.display = 'block';
             durum.style.color = '#ffc107';
-            durum.textContent = 'Outlook aciliyor...';
+            durum.textContent = 'Mail hazirlaniyor...';
             try {
-                const mailRes = await fetch('/api/ariza-mail', {
-                    method: 'POST', headers: { 'Content-Type': 'application/json' },
+                const mailRes = await apiFetch('/api/ariza-mail', {
+                    method: 'POST',
                     body: JSON.stringify({ kayitlar: eklenenKayitlar })
                 });
                 const mailData = await mailRes.json();
                 if (mailData.hata) { durum.style.display = 'none'; alert(mailData.hata); return; }
-                const outRes = await fetch('/api/outlook-ac', {
-                    method: 'POST', headers: { 'Content-Type': 'application/json' },
+                const outRes = await apiFetch('/api/outlook-ac', {
+                    method: 'POST',
                     body: JSON.stringify({ html: mailData.html, konu: mailData.konu })
                 });
                 const outData = await outRes.json();
                 if (outData.hata) { durum.style.display = 'none'; alert(outData.hata); return; }
-                durum.style.color = '#00e676';
-                durum.textContent = 'Outlook acildi! ' + mailData.kayitSayisi + ' kayit ile tablo hazir.';
+                if (outData.mobil && outData.mailto) {
+                    window.location.href = outData.mailto;
+                    durum.style.color = '#00e676';
+                    durum.textContent = 'Mail uygulamasi aciliyor... ' + mailData.kayitSayisi + ' kayit.';
+                } else {
+                    durum.style.color = '#00e676';
+                    durum.textContent = 'Outlook acildi! ' + mailData.kayitSayisi + ' kayit ile tablo hazir.';
+                }
                 setTimeout(() => { durum.style.display = 'none'; }, 5000);
             } catch (err) { durum.style.display = 'none'; alert('Hata: ' + err.message); }
         }
