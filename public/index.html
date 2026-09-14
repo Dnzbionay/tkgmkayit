@@ -432,7 +432,7 @@
             const durum = document.getElementById('mailDurum');
             durum.style.display = 'block';
             durum.style.color = '#ffc107';
-            durum.textContent = 'Mail gonderiliyor...';
+            durum.textContent = 'Mail hazirlaniyor...';
             apiFetch('/api/ariza-mail', {
                 method: 'POST',
                 body: JSON.stringify({ kayitlar: eklenenKayitlar })
@@ -440,14 +440,18 @@
                 if (mailData.hata) { durum.style.display = 'none'; alert(mailData.hata); return; }
                 return apiFetch('/api/outlook-ac', {
                     method: 'POST',
-                    body: JSON.stringify({ html: mailData.html, konu: mailData.konu })
+                    body: JSON.stringify({ html: mailData.html, konu: mailData.konu, plainText: mailData.plainText })
                 }).then(r => r.json()).then(outData => {
                     durum.style.display = 'none';
                     if (outData.hata) { alert(outData.hata); return; }
-                    durum.style.display = 'block';
-                    durum.style.color = '#00e676';
-                    durum.textContent = outData.mesaj || 'Outlook acildi!';
-                    setTimeout(() => { durum.style.display = 'none'; }, 5000);
+                    if (outData.bulut) {
+                        window.location.href = 'mailto:?subject=' + encodeURIComponent(outData.konu) + '&body=' + encodeURIComponent(outData.plainText || mailData.plainText);
+                    } else {
+                        durum.style.display = 'block';
+                        durum.style.color = '#00e676';
+                        durum.textContent = 'Outlook acildi!';
+                        setTimeout(() => { durum.style.display = 'none'; }, 3000);
+                    }
                 });
             }).catch(err => { durum.style.display = 'none'; alert('Hata: ' + err.message); });
         }

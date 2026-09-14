@@ -353,40 +353,29 @@ app.post('/api/ariza-mail', sifreKontrol, (req, res) => {
 });
 
 app.post('/api/outlook-ac', sifreKontrol, (req, res) => {
-    const { html, konu } = req.body;
+    const { html, konu, plainText } = req.body;
     if (!html) return res.status(400).json({ hata: 'HTML gerekli' });
 
-    // Windows - PowerShell ile Outlook ac
-    if (process.platform === 'win32') {
-        const tempDir = path.join(__dirname, 'temp');
-        if (!fs.existsSync(tempDir)) fs.mkdirSync(tempDir, { recursive: true });
-        const htmPath = path.join(tempDir, 'ariza_mail.htm');
-        fs.writeFileSync(htmPath, html, 'utf8');
-        const psScript = `$outlook = New-Object -ComObject Outlook.Application\n$mail = $outlook.CreateItem(0)\n$mail.Subject = '${konu || 'TKGM ARIZA KAYIT'}'\n$mail.HTMLBody = [System.IO.File]::ReadAllText('${htmPath.replace(/\\/g, '\\\\')}', [System.Text.Encoding]::UTF8)\n$mail.Display()`;
-        const psPath = path.join(tempDir, 'outlook_ac.ps1');
-        fs.writeFileSync(psPath, psScript, 'utf8');
-        try {
-            execSync('powershell -ExecutionPolicy Bypass -File "' + psPath + '"', { windowsHide: true });
-            return res.json({ durum: 'ok' });
-        } catch (e) {
-            return res.status(500).json({ hata: 'Outlook acilamadi: ' + e.message });
-        }
+    if (process.platform !== 'win32') {
+        return res.json({ durum: 'ok', html: html, konu: konu, plainText: plainText, bulut: true });
     }
 
-    // Render/Bulut - SMTP ile mail gonder
-    if (transporter) {
-        transporter.sendMail({
-            from: MAIL_FROM,
-            to: MAIL_TO,
-            subject: konu || 'TKGM ARIZA KAYIT',
-            html: html
-        }).then(info => {
-            res.json({ durum: 'ok', mesaj: 'Mail gonderildi: ' + info.messageId });
-        }).catch(err => {
-            res.status(500).json({ hata: 'Mail gonderilemedi: ' + err.message });
-        });
-    } else {
-        res.status(500).json({ hata: 'SMTP ayarlari yapilmamis. Render Environment bolumune SMTP_HOST, SMTP_USER, SMTP_PASS ekleyin.' });
+    const tempDir = path.join(__dirname, 'temp');
+    if (!fs.existsSync(tempDir)) fs.mkdirSync(tempDir, { recursive: true });
+
+    const htmPath = path.join(tempDir, 'ariza_mail.htm');
+    fs.writeFileSync(htmPath, html, 'utf8');
+
+    const psScript = `$outlook = New-Object -ComObject Outlook.Application\n$mail = $outlook.CreateItem(0)\n$mail.Subject = '${konu || 'TKGM ARIZA KAYIT'}'\n$mail.HTMLBody = [System.IO.File]::ReadAllText('${htmPath.replace(/\\/g, '\\\\')}', [System.Text.Encoding]::UTF8)\n$mail.Display()`;
+
+    const psPath = path.join(tempDir, 'outlook_ac.ps1');
+    fs.writeFileSync(psPath, psScript, 'utf8');
+
+    try {
+        execSync('powershell -ExecutionPolicy Bypass -File "' + psPath + '"', { windowsHide: true });
+        res.json({ durum: 'ok' });
+    } catch (e) {
+        res.status(500).json({ hata: 'Outlook acilamadi: ' + e.message });
     }
 });
 
