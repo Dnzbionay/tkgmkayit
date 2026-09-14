@@ -440,13 +440,25 @@
                 if (mailData.hata) { durum.style.display = 'none'; alert(mailData.hata); return; }
                 return apiFetch('/api/outlook-ac', {
                     method: 'POST',
-                    body: JSON.stringify({ html: mailData.html, konu: mailData.konu, plainText: mailData.plainText })
+                    body: JSON.stringify({ html: mailData.html, konu: mailData.konu })
                 }).then(r => r.json()).then(outData => {
                     durum.style.display = 'none';
                     if (outData.hata) { alert(outData.hata); return; }
                     if (outData.bulut) {
-                        const body = outData.plainText || mailData.plainText;
-                        window.location.href = 'mailto:?subject=' + encodeURIComponent(outData.konu) + '&body=' + encodeURIComponent(body);
+                        const eml = 'MIME-Version: 1.0\r\nContent-Type: text/html; charset=UTF-8\r\nContent-Transfer-Encoding: base64\r\nSubject: ' + outData.konu + '\r\n\r\n' + btoa(unescape(encodeURIComponent(outData.html)));
+                        const blob = new Blob([eml], { type: 'message/rfc822' });
+                        const url = URL.createObjectURL(blob);
+                        const a = document.createElement('a');
+                        a.href = url;
+                        a.download = 'TKGM_Ariza_Kayit.eml';
+                        document.body.appendChild(a);
+                        a.click();
+                        document.body.removeChild(a);
+                        URL.revokeObjectURL(url);
+                        durum.style.display = 'block';
+                        durum.style.color = '#00e676';
+                        durum.textContent = '.eml indirildi. Acmak icin tiklayin, Outlook tablo ile acilacaktir.';
+                        setTimeout(() => { durum.style.display = 'none'; }, 8000);
                     } else {
                         durum.style.display = 'block';
                         durum.style.color = '#00e676';
